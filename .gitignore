@@ -3,3 +3,6 @@ data/*
 *env
 *.egg-info
 *.foo
+build
+.local
+.DS_Store

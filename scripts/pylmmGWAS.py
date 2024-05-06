@@ -26,6 +26,9 @@ import pdb
 import time
 import sys
 
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def printOutHead(): out.write(
     "\t".join(["SNP_ID", "BETA", "BETA_SD", "F_STAT", "P_VALUE"]) + "\n")
@@ -308,6 +311,7 @@ else:
 
 # CREATE LMM object for association
 n = K.shape[0]
+logging.debug(f"n: {n}")
 if not options.kfile2:
     L = LMM(Y, K, Kva, Kve, X0, verbose=options.verbose)
 else:
@@ -337,11 +341,13 @@ printOutHead()
 
 for snp, id in IN:
     count += 1
+
     if options.verbose and count % 1000 == 0:
         sys.stderr.write("At SNP %d\n" % count)
 
     x = snp[keep].reshape((n, 1))
     v = np.isnan(x).reshape((-1,))
+
     # Check SNPs for missing values
     if v.sum():
         keeps = ~v

@@ -21,6 +21,9 @@ import numpy as np
 import struct
 import pdb
 
+import logging 
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class plink:
     def __init__(
@@ -125,6 +128,7 @@ class plink:
         self.snpFileHandle = open(file, 'r')
 
         self.BytestoRead = self.N // 4 + (self.N % 4 and 1 or 0)
+        logging.debug(f"[PLINK] Bytes to read: {self.BytestoRead}")
         self._formatStr = 'c' * self.BytestoRead
 
         file = self.fbase + '.bed'
@@ -145,14 +149,14 @@ class plink:
         if self.have_read == self.numSNPs:
             raise StopIteration
         self.have_read += 1
-
+        
         if self.type == 'b':
             X = self.fhandle.read(self.BytestoRead)
             # XX = [bin(ord(x)) for x in struct.unpack(self._formatStr, X)]
             XX = [bin(x)[2:].zfill(8) for x in X]  # Slicing to remove the '0b' prefix and padding
-
-            return self.formatBinaryGenotypes(
+            res = self.formatBinaryGenotypes(
                 XX, self.normGenotype), self.snpFileHandle.readline().strip().split()[1]
+            return res
 
         elif self.type == 't':
             X = self.fhandle.readline()
@@ -210,9 +214,14 @@ class plink:
         G = []
         for x in X:
             if not len(x) == 10:
+                # logging.debug("(i) x: {}, type(x): {},  length: {}".format(x, type(x), len(x)))
                 xx = x[2:]
-                x = '0b' + '0' * (8 - len(xx)) + xx
+                if x[0:2] == "0b":
+                    x = '0b' + '0' * (8 - len(xx)) + xx
+                elif len(x) == 8:
+                    x = "0b" + x
             a, b, c, d = (x[8:], x[6:8], x[4:6], x[2:4])
+            # logging.debug("a: {}, b: {}, c: {}, d: {}". format(a, b, c, d))
             L = [D[y] for y in [a, b, c, d]]
             G += L
         # only take the leading values because whatever is left should be null
