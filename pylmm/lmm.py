@@ -202,7 +202,7 @@ class LMM:
             X0 = np.ones(len(Y)).reshape(len(Y), 1)
         self.verbose = verbose
 
-        x = True - np.isnan(Y)
+        x = ~np.isnan(Y)
         x = x.reshape(-1,)
         if not x.sum() == len(Y):
             if self.verbose:

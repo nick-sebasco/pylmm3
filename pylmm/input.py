@@ -124,7 +124,7 @@ class plink:
         self.have_read = 0
         self.snpFileHandle = open(file, 'r')
 
-        self.BytestoRead = self.N / 4 + (self.N % 4 and 1 or 0)
+        self.BytestoRead = self.N // 4 + (self.N % 4 and 1 or 0)
         self._formatStr = 'c' * self.BytestoRead
 
         file = self.fbase + '.bed'
@@ -132,7 +132,7 @@ class plink:
 
         magicNumber = self.fhandle.read(2)
         order = self.fhandle.read(1)
-        if not order == '\x01':
+        if not order == b'\x01':
             sys.stderr.write(
                 "This is not in SNP major order - you did not handle this case\n")
             raise StopIteration
@@ -141,14 +141,16 @@ class plink:
 
     def __iter__(self): return self.getSNPIterator()
 
-    def next(self):
+    def __next__(self):
         if self.have_read == self.numSNPs:
             raise StopIteration
         self.have_read += 1
 
         if self.type == 'b':
             X = self.fhandle.read(self.BytestoRead)
-            XX = [bin(ord(x)) for x in struct.unpack(self._formatStr, X)]
+            # XX = [bin(ord(x)) for x in struct.unpack(self._formatStr, X)]
+            XX = [bin(x)[2:].zfill(8) for x in X]  # Slicing to remove the '0b' prefix and padding
+
             return self.formatBinaryGenotypes(
                 XX, self.normGenotype), self.snpFileHandle.readline().strip().split()[1]
 
@@ -221,7 +223,7 @@ class plink:
         return G
 
     def normalizeGenotype(self, G):
-        x = True - np.isnan(G)
+        x = ~np.isnan(G)
         if not len(G[x]):
             return G[x]
         m = G[x].mean()
@@ -261,7 +263,7 @@ class plink:
             for i in range(len(keys)):
                 D[keys[i]] = i
             for i in range(len(self.indivs)):
-                if not D.has_key(self.indivs[i]):
+                if self.indivs[i] not in D:
                     continue
                 L.append(D[self.indivs[i]])
             P = P[L, :]
@@ -330,7 +332,7 @@ class plink:
             KK = []
             X = []
             for i in range(len(self.indivs)):
-                if not D.has_key(self.indivs[i]):
+                if self.indivs[i] not in D:
                     X.append(self.indivs[i])
                 else:
                     KK.append(self.indivs[i])
@@ -377,7 +379,7 @@ class plink:
         for i in range(len(keys)):
             D[keys[i]] = i
         for i in range(len(self.indivs)):
-            if not D.has_key(self.indivs[i]):
+            if self.indivs[i] not in D:
                 continue
             L.append(D[self.indivs[i]])
         P = P[L, :]
